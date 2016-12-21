@@ -41,6 +41,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 #include "tag25h9.h"
 #include "tag25h7.h"
 #include "common/getopt.h"
+#include "common/homography.h"
 
 using namespace std;
 using namespace cv;
@@ -71,12 +72,12 @@ int main(int argc, char *argv[])
 
     // Initialize camera
     VideoCapture cap(0);
-    /*
+
     if (!cap.isOpened()) {
         cerr << "Couldn't open video capture device" << endl;
         return -1;
     }
-    */
+
     // Initialize tag detector with options
     apriltag_family_t *tf = NULL;
     const char *famname = getopt_get_string(getopt, "family");
@@ -108,9 +109,9 @@ int main(int argc, char *argv[])
 
     Mat frame, gray;
     while (true) {
-        //cap >> frame;
+        cap >> frame;
 
-        frame = imread("test.png", CV_LOAD_IMAGE_COLOR);
+        //frame = imread("test.png", CV_LOAD_IMAGE_COLOR);
 
         cvtColor(frame, gray, COLOR_BGR2GRAY);
 
@@ -152,11 +153,17 @@ int main(int argc, char *argv[])
             putText(frame, text, Point(det->c[0]-textsize.width/2,
                                        det->c[1]+textsize.height/2),
                     fontface, fontscale, Scalar(0xff, 0x99, 0), 2);
+            matd_t *m = homography_to_pose(det->H, 817.18087220476332, 817.18087220476332, 319.5, 239.5);
+            std::cout << gray.rows << " " << gray.cols << std::endl;
+            std::cout << "x = " << -matd_get(m, 0,3)*16.5/2 << "cm ";
+            std::cout << "y = " << -matd_get(m, 1,3)*16.5/2 << "cm ";
+            std::cout << "z = " << -matd_get(m, 2,3)*16.5/2 << "cm" << std::endl;
+
         }
         zarray_destroy(detections);
 
         imshow("Tag Detections", frame);
-        if (waitKey(30) >= 0)
+        if (waitKey(1) >= 0)
             break;
     }
 
