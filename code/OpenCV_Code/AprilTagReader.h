@@ -21,7 +21,7 @@ class AprilTagReader
 {
 public:
 
-    AprilTagReader(int camera_id=0);
+    AprilTagReader(int camera_id=0, int width=640, int height=480);
 
     ~AprilTagReader();
 

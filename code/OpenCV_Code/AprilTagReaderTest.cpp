@@ -8,7 +8,7 @@
 int main()
 {
 
-    AprilTagReader reader;
+    AprilTagReader reader(1);
 
 
     do{

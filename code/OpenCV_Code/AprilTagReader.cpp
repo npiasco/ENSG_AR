@@ -2,8 +2,11 @@
 
 
 
-AprilTagReader::AprilTagReader(int camera_id) : cap(camera_id)
+AprilTagReader::AprilTagReader(int camera_id, int width, int height) : cap(camera_id)
 {
+    
+    cap.set(CV_CAP_PROP_FRAME_WIDTH, width);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, height);
     this->tf = tag36h11_create();
     this->td = apriltag_detector_create();
     apriltag_detector_add_family(this->td, this->tf);
