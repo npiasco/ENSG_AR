@@ -1,5 +1,6 @@
 // Std. Includes
 #include <string>
+#include <cmath>
 
 // GLEW
 #include <GL/glew.h>
@@ -9,8 +10,8 @@
 
 // GL includes
 #include "Shader.h"
-#include "Camera.h"
 #include "Model.h"
+#include "Camera.h"
 
 // GLM Mathemtics
 #include <glm/glm.hpp>
@@ -20,12 +21,13 @@
 #include "AprilTagReader.h"
 
 // Properties
-GLuint screenWidth = 800, screenHeight = 600;
+
+//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 int main()
 {
-    
-    
+    GLuint screenWidth = 800, screenHeight = 600;
+    GLuint imageWidth = 640, imageHeight = 480;
 
     
     glfwInit();
@@ -36,7 +38,9 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     
     GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "OpenGL", nullptr, nullptr); // Windowed
-    glfwMakeContextCurrent(window);        
+    glfwMakeContextCurrent(window);
+  //  glfwSetKeyCallback(window, key_callback);
+
    
     glewExperimental = GL_TRUE;
     glewInit();
@@ -51,7 +55,7 @@ int main()
     
     Shader shader("opengl_code/shaders/default.vertexshader", "opengl_code/shaders/default.fragmentshader");
     
-    AprilTagReader reader(1);
+    AprilTagReader reader(1,imageWidth,imageHeight);
     
     cv::Mat image = reader.getImage();
     //use fast 4-byte alignment (default anyway) if possible
@@ -84,13 +88,18 @@ int main()
     // On unbind la texture
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	
+    shader.Use();
+    glm::mat4 projection = glm::perspective(45.0f, (GLfloat) imageWidth/imageHeight, 0.1f, 100.0f);
+    glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    GLfloat focal = projection[0][0]; // f
+    
 	GLfloat vertices[] = {
         /*     Positions    |      Normales     |     UV     */
-       0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
-       0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
-      -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
-      -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // Top Left 
+       1.0f,  0.75f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
+       1.0f, -0.75f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
+      -1.0f, -0.75f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
+      -1.0f,  0.75f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // Top Left
     };
     
     GLshort indices[]{
@@ -127,44 +136,78 @@ int main()
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-	
-    Camera camera(glm::vec3(0.0f, 0.0f, 0.9f), window);
     
+    shader.Use();
+
+    Model suzanne("opengl_code/model/suzanne.obj");
     // Game loop
+    Camera camera(window,glm::vec3(0.0f,0.0f,focal));
     while(!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        
-        //camera.Do_Movement();
-        
+        camera.Do_Movement();
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Use();
-        glm::mat4 projection = glm::perspective(45.0f, 1.0f, 0.1f, 100.0f);
+        //glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, -focal), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 view = camera.GetViewMatrix();
-        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
         
         glm::mat4 model;
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));	
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		
-		//  Activiation  de la  texture 0
-		glActiveTexture(GL_TEXTURE0 );//  Binding  de  notre  texture
-		glBindTexture(GL_TEXTURE_2D , texture );//  Association  du  numero  de la  texture  pour le  shader
+        
+        
         image = reader.getImage();
         cv::flip(image, image, 0);
+        
+		//  Activiation  de la  texture 0
+		glActiveTexture(GL_TEXTURE0 );//  Binding  de  notre  texture
+		glBindTexture(GL_TEXTURE_2D , texture );//  Association du numero de la texture  pour le  shader
+        
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.cols, image.rows,
                      0, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
 
-		glUniform1i(glGetUniformLocation(shader.Program , "maTexture"), 0);
-		
-		glBindVertexArray(VAO);
-		
+		glUniform1i(glGetUniformLocation(shader.Program , "modelTexture"), 0);
+        
+        glBindVertexArray(VAO);
         // On dessine l'objet courant 
         glDrawElements(GL_TRIANGLES, 3*2, GL_UNSIGNED_SHORT, 0);
         glBindVertexArray(0);
+
+     
+
+        posT tmat = reader.getTags();
+        if(tmat.size()){
+            // Affichage de la 3D
+            std::pair<dvec3, dvec3x3> tag0transform = tmat[0];
+            model=glm::mat4(1.0f);
+            
+
+            
+            GLfloat scaleNorm = sqrt(pow(tag0transform.first[0],2) + pow(tag0transform.first[1],2) + pow(tag0transform.first[2],2))/focal;
+            GLfloat scaleFactor = ((focal-0.1)/100*scaleNorm+focal+(0.1-focal)*3/2);
+            std::cout << scaleNorm << std::endl;
+            std::cout << scaleFactor << std::endl;
+            model=glm::translate(model, glm::vec3(tag0transform.first[0]/scaleNorm/scaleFactor, -tag0transform.first[1]/scaleNorm/scaleFactor, -(tag0transform.first[2])/scaleNorm/scaleFactor));
+            
+            model=glm::translate(model, glm::vec3(0,0,-focal/2));
+            
+            
+            
+            glm::mat4 rot(1.0f);
+            for(int i=0;i<3;++i){
+                for(int j=0;j<3;++j)
+                    model[i][j]=tag0transform.second[i][j];
+            }
+            //model=rot*model;
+            model=glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
+            glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            suzanne.Draw(shader);
+
+        }
 
         glfwSwapBuffers(window);
     }
@@ -177,5 +220,10 @@ int main()
     return 0;
 }
 
-
-#pragma endregion
+/*
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+}
+*/

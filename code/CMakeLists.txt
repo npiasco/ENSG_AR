@@ -26,6 +26,7 @@ set(ALL_LIBS
 	GLEW_1130
 	assimp
 	apriltag
+	SOIL
 )
 
 add_definitions(

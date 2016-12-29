@@ -62,16 +62,16 @@ public:
             if(name == "texture_diffuse")
             {
                 glUniform1i(glGetUniformLocation(shader.Program, "modelTexture"), i);
-		glBindTexture(GL_TEXTURE_2D, this->textures[i].id);
+                glBindTexture(GL_TEXTURE_2D, this->textures[i].id);
             }
             else if(name == "texture_specular")
             {
                 ss << specularNr++; // Transfer GLuint to stream
-		number = ss.str();
-		// Now set the sampler to the correct texture unit
-		glUniform1i(glGetUniformLocation(shader.Program, (name + number).c_str()), i);
-		// And finally bind the texture
-		glBindTexture(GL_TEXTURE_2D, this->textures[i].id);
+                number = ss.str();
+                // Now set the sampler to the correct texture unit
+                glUniform1i(glGetUniformLocation(shader.Program, (name + number).c_str()), i);
+                // And finally bind the texture
+                glBindTexture(GL_TEXTURE_2D, this->textures[i].id);
 	    }
         }
         
