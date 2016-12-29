@@ -51,11 +51,11 @@ int main()
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
     
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
     
     Shader shader("opengl_code/shaders/default.vertexshader", "opengl_code/shaders/default.fragmentshader");
     
-    AprilTagReader reader(1,imageWidth,imageHeight);
+    AprilTagReader reader(0,imageWidth,imageHeight);
     
     cv::Mat image = reader.getImage();
     //use fast 4-byte alignment (default anyway) if possible
@@ -89,12 +89,28 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
     shader.Use();
-    glm::mat4 projection = glm::perspective(45.0f, (GLfloat) imageWidth/imageHeight, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective((GLfloat) (43.13f*M_PI/180.0), (GLfloat) 1, 0.1f, 100.0f);
+    
     glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
     GLfloat focal = projection[0][0]; // f
-    
+    /*std::cout << focal << std::endl;
+    std::cout << projection[1][1] << std::endl;
+    std::cout << projection[3][3] << std::endl;
+*/
+    for(int i=0;i<4;++i)
+    {
+        for(int j=0;j<4;++j)
+            std::cout << projection[j][i] << "\t";
+        std::cout << std::endl;
+    }
+  
+
+
+
+
 	GLfloat vertices[] = {
+        
         /*     Positions    |      Normales     |     UV     */
        1.0f,  0.75f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
        1.0f, -0.75f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
@@ -147,7 +163,7 @@ int main()
         glfwPollEvents();
         camera.Do_Movement();
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT /*| GL_DEPTH_BUFFER_BIT*/);
 
         shader.Use();
         //glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, -focal), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -189,13 +205,13 @@ int main()
             
             GLfloat scaleNorm = sqrt(pow(tag0transform.first[0],2) + pow(tag0transform.first[1],2) + pow(tag0transform.first[2],2))/focal;
             GLfloat scaleFactor = ((focal-0.1)/100*scaleNorm+focal+(0.1-focal)*3/2);
-            std::cout << scaleNorm << std::endl;
-            std::cout << scaleFactor << std::endl;
-            model=glm::translate(model, glm::vec3(tag0transform.first[0]/scaleNorm/scaleFactor, -tag0transform.first[1]/scaleNorm/scaleFactor, -(tag0transform.first[2])/scaleNorm/scaleFactor));
+            //std::cout << scaleNorm << std::endl;
+            //std::cout << scaleFactor << std::endl;
+
+            //model=glm::translate(model, glm::vec3(tag0transform.first[0]/scaleNorm/scaleFactor, -tag0transform.first[1]/scaleNorm/scaleFactor, -(tag0transform.first[2])/scaleNorm/scaleFactor));
+            model=glm::translate(model, glm::vec3(tag0transform.first[0], -tag0transform.first[1], -tag0transform.first[2]));
             
-            model=glm::translate(model, glm::vec3(0,0,-focal/2));
-            
-            
+            //model=glm::translate(model, glm::vec3(0,0,-focal/2));
             
             glm::mat4 rot(1.0f);
             for(int i=0;i<3;++i){
@@ -203,7 +219,8 @@ int main()
                     model[i][j]=tag0transform.second[i][j];
             }
             //model=rot*model;
-            model=glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
+            //model=glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
+            //model=glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
             glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
             suzanne.Draw(shader);
 
