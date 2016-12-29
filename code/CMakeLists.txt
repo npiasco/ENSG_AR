@@ -38,7 +38,7 @@ add_definitions(
 )
 
 add_executable(main main.cpp 
-		opengl_code/shader.cpp 
+		opengl_code/Shader.cpp 
 		opengl_code/shaders/default.vertexshader 
 		opengl_code/shaders/default.fragmentshader
 		opencv_code/AprilTagReader.cpp
