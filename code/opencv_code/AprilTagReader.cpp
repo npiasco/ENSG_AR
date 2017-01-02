@@ -2,7 +2,8 @@
 
 
 
-AprilTagReader::AprilTagReader(int camera_id, int width, int height) : cap(camera_id)
+AprilTagReader::AprilTagReader(int camera_id, int width, int height, float focal, float cx, float cy, float tagSize) :
+cap(camera_id), focal(focal), cx(cx), cy(cy), tagSize(tagSize)
 {
     
     cap.set(CV_CAP_PROP_FRAME_WIDTH, width);
@@ -26,7 +27,9 @@ cv::Mat const AprilTagReader::getImage()
     return copy;
 }
 
-posT const AprilTagReader::getTags(){
+
+
+std::vector<TagData> const AprilTagReader::getTags(){
 
     cv::Mat gray;
     cv::cvtColor(this->current_image, gray, cv::COLOR_BGR2GRAY);
@@ -42,33 +45,29 @@ posT const AprilTagReader::getTags(){
     std::cout << zarray_size(detections) << " tags detected" << std::endl;
 
     // Draw detection outlines
-    posT tagPos;
+    std::vector<TagData> tagPos;
     for (int i = 0; i < zarray_size(detections); ++i) {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
         
-        matd_t *m = homography_to_pose(det->H, 817.18087220476332, 817.18087220476332, 319.5, 239.5);
+        matd_t *m = homography_to_pose(det->H, this->focal, this->focal, this->cx, this->cy);
         
-        dvec3 trans;
-        dvec3x3 rot;
+        TagData data;
 
-        std::cout << "x = " << -matd_get(m, 0,3)*16.5/2 << "cm ";
-        trans.push_back(-matd_get(m, 0,3)*16.5/2);
-        std::cout << "y = " << -matd_get(m, 1,3)*16.5/2 << "cm ";
-        trans.push_back(-matd_get(m, 1,3)*16.5/2);
-        std::cout << "z = " << -matd_get(m, 2,3)*16.5/2 << "cm" << std::endl;
-        trans.push_back(-matd_get(m, 2,3)*16.5/2);
+        data.position[0]=matd_get(m, 0,3)*this->tagSize/2;
+        std::cout << "x = " << data.position[0] << "cm ";
+        data.position[1]=matd_get(m, 1,3)*this->tagSize/2;
+        std::cout << "y = " << data.position[1] << "cm ";
+        data.position[2]=matd_get(m, 2,3)*this->tagSize/2;
+        std::cout << "z = " << data.position[2] << "cm" << std::endl;
+
 
         for(int l=0;l<3;++l)
-        {
-            dvec3 tmp;
             for(int c=0; c<3; ++c)
-                tmp.push_back(matd_get(m, l,c));
-            rot.push_back(tmp);
-        }
+                data.orientation[l][c]=matd_get(m, l,c);
 
-
-        tagPos[i]=std::pair<dvec3,dvec3x3>(trans, rot);
+        data.tagId=det->id;
+        tagPos.push_back(data);
 
     }
     zarray_destroy(detections);

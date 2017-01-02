@@ -51,11 +51,11 @@ int main()
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
     
-    //glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     
     Shader shader("opengl_code/shaders/default.vertexshader", "opengl_code/shaders/default.fragmentshader");
     
-    AprilTagReader reader(0,imageWidth,imageHeight);
+    AprilTagReader reader(1,imageWidth,imageHeight);
     
     cv::Mat image = reader.getImage();
     //use fast 4-byte alignment (default anyway) if possible
@@ -89,25 +89,11 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
     shader.Use();
-    glm::mat4 projection = glm::perspective((GLfloat) (43.13f*M_PI/180.0), (GLfloat) 1, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective((GLfloat) (43.13f*M_PI/180.0), ((GLfloat) screenWidth)/((GLfloat)screenHeight), 0.1f, 300.0f);
     
     glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-    GLfloat focal = projection[0][0]; // f
-    /*std::cout << focal << std::endl;
-    std::cout << projection[1][1] << std::endl;
-    std::cout << projection[3][3] << std::endl;
-*/
-    for(int i=0;i<4;++i)
-    {
-        for(int j=0;j<4;++j)
-            std::cout << projection[j][i] << "\t";
-        std::cout << std::endl;
-    }
-  
-
-
-
+    GLfloat focal = projection[0][0]; // fov=43.13f
 
 	GLfloat vertices[] = {
         
@@ -155,7 +141,12 @@ int main()
     
     shader.Use();
 
-    Model suzanne("opengl_code/model/suzanne.obj");
+    std::vector<Model> lModels;
+    lModels.push_back(Model("opengl_code/model/suzanne.obj"));
+    lModels.push_back(Model("opengl_code/model/House/house.obj"));
+    lModels.push_back(Model("opengl_code/model/Lamp/Lamp.obj"));
+    lModels.push_back(Model("opengl_code/model/Trees/Tree1/tree1.3ds"));
+
     // Game loop
     Camera camera(window,glm::vec3(0.0f,0.0f,focal));
     while(!glfwWindowShouldClose(window))
@@ -174,8 +165,7 @@ int main()
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));	
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		
-        
-        
+      
         image = reader.getImage();
         cv::flip(image, image, 0);
         
@@ -193,36 +183,79 @@ int main()
         glDrawElements(GL_TRIANGLES, 3*2, GL_UNSIGNED_SHORT, 0);
         glBindVertexArray(0);
 
-     
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-        posT tmat = reader.getTags();
-        if(tmat.size()){
+        std::vector<TagData> tmat = reader.getTags();
+        
+        
+        for(std::vector<TagData>::const_iterator it=tmat.cbegin(), end=tmat.cend(); it != end; ++it)
+        {
+            
             // Affichage de la 3D
-            std::pair<dvec3, dvec3x3> tag0transform = tmat[0];
+          //  std::pair<dvec3, dvec3x3> tag0transform = it->second;
             model=glm::mat4(1.0f);
             
-
             
-            GLfloat scaleNorm = sqrt(pow(tag0transform.first[0],2) + pow(tag0transform.first[1],2) + pow(tag0transform.first[2],2))/focal;
-            GLfloat scaleFactor = ((focal-0.1)/100*scaleNorm+focal+(0.1-focal)*3/2);
             //std::cout << scaleNorm << std::endl;
             //std::cout << scaleFactor << std::endl;
-
+            //model=glm::translate(model, glm::vec3(tag0transform.first[0]*4.0/3.0, -tag0transform.first[1]*4.0/3.0, -tag0transform.first[2]));
+            
             //model=glm::translate(model, glm::vec3(tag0transform.first[0]/scaleNorm/scaleFactor, -tag0transform.first[1]/scaleNorm/scaleFactor, -(tag0transform.first[2])/scaleNorm/scaleFactor));
-            model=glm::translate(model, glm::vec3(tag0transform.first[0], -tag0transform.first[1], -tag0transform.first[2]));
             
             //model=glm::translate(model, glm::vec3(0,0,-focal/2));
             
-            glm::mat4 rot(1.0f);
+            glm::mat4 rot(1.0f), rotx(1.0f);
+            glm::vec4 trans(1.0f);
+            
+            /*for(int i=0;i<3;++i){
+             for(int j=0;j<3;++j)
+             model[i][j]=tag0transform.second[j][i];
+             }*/
             for(int i=0;i<3;++i){
                 for(int j=0;j<3;++j)
-                    model[i][j]=tag0transform.second[i][j];
+                    rot[i][j]=it->orientation[j][i];
             }
-            //model=rot*model;
-            //model=glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
-            //model=glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
+            rotx=glm::rotate(rotx,(GLfloat) M_PI, glm::vec3(1,0,0));
+            
+            rot[3][0]=(GLfloat) (-it->position[0]*4.0/3.0);
+            rot[3][1]=(GLfloat) (-it->position[1]*4.0/3.0);
+            rot[3][2]=(GLfloat) (-it->position[2]);
+            
+            /*
+             trans=rotx*trans;
+             rot=rot*rotx;
+             */
+            //model=glm::rotate(model,(GLfloat) M_PI/2, glm::vec3(1,0,0));
+            //model=glm::rotate(model,(GLfloat) M_PI, glm::vec3(0,1,0));
+            
+            //model=rot;
+            
+            //model=glm::translate(rot,glm::vec3(trans.x, trans.y, trans.z));
+            
+            model=(rotx)*(rot);
+            
+            switch(it->tagId)
+            {
+                case 0:
+                    model=glm::rotate(model,(GLfloat) M_PI, glm::vec3(0,1,0));
+                    model=glm::scale(model, glm::vec3(6, 6, 6));
+                    break;
+                case 1:
+                    model=glm::rotate(model,(GLfloat) M_PI, glm::vec3(0,1,0));
+                    model=glm::scale(model, glm::vec3(0.5, 0.5, 0.5));
+                    break;
+                case 2:
+                    model=glm::rotate(model,(GLfloat) -M_PI/2, glm::vec3(1,0,0));
+                    model=glm::scale(model, glm::vec3(5, 5, 5));
+                    break;
+                case 3:
+                    model=glm::rotate(model,(GLfloat) M_PI, glm::vec3(0,1,0));
+                    model=glm::scale(model, glm::vec3(10, 10, 10));
+                    break;
+            }
+            
             glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            suzanne.Draw(shader);
+            lModels[it->tagId].Draw(shader);
 
         }
 
