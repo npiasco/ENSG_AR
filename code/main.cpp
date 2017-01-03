@@ -55,7 +55,7 @@ int main()
     
     Shader shader("opengl_code/shaders/default.vertexshader", "opengl_code/shaders/default.fragmentshader");
     
-    AprilTagReader reader(1,imageWidth,imageHeight);
+    AprilTagReader reader(0,imageWidth,imageHeight);
     
     cv::Mat image = reader.getImage();
     //use fast 4-byte alignment (default anyway) if possible
@@ -145,7 +145,7 @@ int main()
     lModels.push_back(Model("opengl_code/model/suzanne.obj"));
     lModels.push_back(Model("opengl_code/model/House/house.obj"));
     lModels.push_back(Model("opengl_code/model/Lamp/Lamp.obj"));
-    lModels.push_back(Model("opengl_code/model/Trees/Tree1/tree1.3ds"));
+    lModels.push_back(Model("opengl_code/model/Trees/Tree1/Tree1.3ds"));
 
     // Game loop
     Camera camera(window,glm::vec3(0.0f,0.0f,focal));
