@@ -11,7 +11,6 @@
 // GL includes
 #include "Shader.h"
 #include "Model.h"
-#include "Camera.h"
 
 // GLM Mathemtics
 #include <glm/glm.hpp>
@@ -20,9 +19,8 @@
 
 #include "AprilTagReader.h"
 
-// Properties
 
-//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 int main()
 {
@@ -39,7 +37,7 @@ int main()
     
     GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "OpenGL", nullptr, nullptr); // Windowed
     glfwMakeContextCurrent(window);
-  //  glfwSetKeyCallback(window, key_callback);
+    glfwSetKeyCallback(window, key_callback);
 
    
     glewExperimental = GL_TRUE;
@@ -54,16 +52,11 @@ int main()
     glEnable(GL_DEPTH_TEST);
     
     Shader shader("opengl_code/shaders/default.vertexshader", "opengl_code/shaders/default.fragmentshader");
+    Shader lightshader("opengl_code/shaders/light.vertexshader", "opengl_code/shaders/light.fragmentshader");
     
     AprilTagReader reader(0,imageWidth,imageHeight);
     
     cv::Mat image = reader.getImage();
-    //use fast 4-byte alignment (default anyway) if possible
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, (image.step & 3) ? 1 : 4);
-    
-    //set length of one complete row in data (doesn't need to equal image.cols)
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH, image.step/image.elemSize());
-    // Init GLFW
     cv::flip(image, image, 0);
     
     GLuint texture; // Declaration de l'identifiant
@@ -92,16 +85,18 @@ int main()
     glm::mat4 projection = glm::perspective((GLfloat) (43.13f*M_PI/180.0), ((GLfloat) screenWidth)/((GLfloat)screenHeight), 0.1f, 300.0f);
     
     glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    lightshader.Use();
+    glUniformMatrix4fv(glGetUniformLocation(lightshader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
     GLfloat focal = projection[0][0]; // fov=43.13f
 
 	GLfloat vertices[] = {
         
         /*     Positions    |      Normales     |     UV     */
-       1.0f,  0.75f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
-       1.0f, -0.75f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
-      -1.0f, -0.75f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // Bottom Left
-      -1.0f,  0.75f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // Top Left
+       1.0f,  0.75f, 0.0f,   0.0f, 0.0f, 0.0f,   1.0f, 1.0f, // Top Right
+       1.0f, -0.75f, 0.0f,   0.0f, 0.0f, 0.0f,   1.0f, 0.0f, // Bottom Right
+      -1.0f, -0.75f, 0.0f,   0.0f, 0.0f, 0.0f,   0.0f, 0.0f, // Bottom Left
+      -1.0f,  0.75f, 0.0f,   0.0f, 0.0f, 0.0f,   0.0f, 1.0f  // Top Left
     };
     
     GLshort indices[]{
@@ -143,29 +138,30 @@ int main()
 
     std::vector<Model> lModels;
     lModels.push_back(Model("opengl_code/model/suzanne.obj"));
+    //lModels.push_back(Model("opengl_code/model/QGIS/stl/0_ISERE_50_asc_0.stl"));
+    //lModels.push_back(Model("opengl_code/model/QGIS/0_ISERE_50_asc_0.obj"));
+
     lModels.push_back(Model("opengl_code/model/House/house.obj"));
     lModels.push_back(Model("opengl_code/model/Lamp/Lamp.obj"));
     lModels.push_back(Model("opengl_code/model/Trees/Tree1/Tree1.3ds"));
 
     // Game loop
-    Camera camera(window,glm::vec3(0.0f,0.0f,focal));
+    //Camera camera(window,glm::vec3(0.0f,0.0f,focal));
     while(!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        camera.Do_Movement();
+        //camera.Do_Movement();
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT /*| GL_DEPTH_BUFFER_BIT*/);
 
         shader.Use();
-        //glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, -focal), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, focal), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        //glm::mat4 view = camera.GetViewMatrix();
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        
         glm::mat4 model;
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));	
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		
-      
+        
         image = reader.getImage();
         cv::flip(image, image, 0);
         
@@ -243,6 +239,7 @@ int main()
                 case 1:
                     model=glm::rotate(model,(GLfloat) M_PI, glm::vec3(0,1,0));
                     model=glm::scale(model, glm::vec3(0.5, 0.5, 0.5));
+                    
                     break;
                 case 2:
                     model=glm::rotate(model,(GLfloat) -M_PI/2, glm::vec3(1,0,0));
@@ -253,10 +250,12 @@ int main()
                     model=glm::scale(model, glm::vec3(10, 10, 10));
                     break;
             }
-            
-            glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            lModels[it->tagId].Draw(shader);
 
+            lightshader.Use();
+            glUniformMatrix4fv(glGetUniformLocation(lightshader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(glGetUniformLocation(lightshader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            if(it->tagId < lModels.size())  
+                lModels[it->tagId].Draw(lightshader);
         }
 
         glfwSwapBuffers(window);
@@ -270,10 +269,9 @@ int main()
     return 0;
 }
 
-/*
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
-*/

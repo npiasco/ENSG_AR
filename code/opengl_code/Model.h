@@ -92,21 +92,26 @@ private:
         // Walk through each of the mesh's vertices
         for(GLuint i = 0; i < mesh->mNumVertices; i++)
         {
+            
             Vertex vertex;
             glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
             // Positions
+            
             vector.x = mesh->mVertices[i].x;
             vector.y = mesh->mVertices[i].y;
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
             // Normals
+            
             vector.x = mesh->mNormals[i].x;
             vector.y = mesh->mNormals[i].y;
             vector.z = mesh->mNormals[i].z;
+            
             vertex.Normal = vector;
             // Texture Coordinates
+
             if(mesh->mTextureCoords[0]) // Does the mesh contain texture coordinates?
-            {
+            {   
                 glm::vec2 vec;
                 // A vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't
                 // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
@@ -118,6 +123,7 @@ private:
                 vertex.TexCoords = glm::vec2(0.0f, 0.0f);
             vertices.push_back(vertex);
         }
+        
         // Now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
         for(GLuint i = 0; i < mesh->mNumFaces; i++)
         {
@@ -127,6 +133,7 @@ private:
                 indices.push_back(face.mIndices[j]);
         }
         // Process materials
+ 
         if(mesh->mMaterialIndex >= 0)
         {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -138,6 +145,7 @@ private:
             // Normal: texture_normalN
             
             // 1. Diffuse maps
+            
             vector<Texture> diffuseMaps = this->loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
             textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
             // 2. Specular maps
@@ -154,6 +162,7 @@ private:
     vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
     {
         vector<Texture> textures;
+        //std::cout << mat->GetTextureCount(type)
         for(GLuint i = 0; i < mat->GetTextureCount(type); i++)
         {
             aiString str;

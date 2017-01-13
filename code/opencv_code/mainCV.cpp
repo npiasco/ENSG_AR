@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     }
 
     // Initialize camera
-    VideoCapture cap(1);
+    VideoCapture cap(0);
 
     if (!cap.isOpened()) {
         cerr << "Couldn't open video capture device" << endl;

@@ -110,7 +110,11 @@ public:
                     inputType = VIDEO_FILE;
             }
             if (inputType == CAMERA)
+            {
                 inputCapture.open(cameraID);
+                inputCapture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+                inputCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+            }
             if (inputType == VIDEO_FILE)
                 inputCapture.open(input);
             if (inputType != IMAGE_LIST && !inputCapture.isOpened())
