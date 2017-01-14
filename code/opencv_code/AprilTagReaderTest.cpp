@@ -3,18 +3,12 @@
 
 
 
-
-
 int main()
 {
 
-    AprilTagReader reader(1);
+    // Fonction cv::imshow("NomDeLaFenetre", image) pour afficher une image dans une fenetre
 
-    do{
-        
-        cv::imshow("Tag Detections", reader.getImage());
-
-    }while(cv::waitKey(1)<0);
+    // cv::waitKey(1) permet d'afficher les fenetres. Renvoie une valeur négative si on essaye de quitter la fenetre
 
 
     return 0;

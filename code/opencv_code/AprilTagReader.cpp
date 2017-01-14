@@ -3,9 +3,9 @@
 
 
 AprilTagReader::AprilTagReader(int camera_id, int width, int height, float focal, float cx, float cy, float tagSize) :
-cap(camera_id), focal(focal), cx(cx), cy(cy), tagSize(tagSize)
+cap(camera_id), cx(cx), cy(cy), tagSize(tagSize)
 {
-    
+    this->focal = focal * (float) height / (float) width;
     cap.set(CV_CAP_PROP_FRAME_WIDTH, width);
     cap.set(CV_CAP_PROP_FRAME_HEIGHT, height);
     this->tf = tag36h11_create();
