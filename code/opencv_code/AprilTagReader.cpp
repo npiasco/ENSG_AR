@@ -30,7 +30,10 @@ cv::Mat const AprilTagReader::getImage()
 
 
 std::vector<TagData> const AprilTagReader::getTags(){
-
+	
+	if(!(this->current_image.cols > 0 && this->current_image.cols > 0))
+		cap >> this->current_image;
+		
     cv::Mat gray;
     cv::cvtColor(this->current_image, gray, cv::COLOR_BGR2GRAY);
 
