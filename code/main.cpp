@@ -128,7 +128,7 @@ int main()
     /******************* Initialisation du detecteur *********************/
 
     // Instanciation
-    AprilTagReader reader(1,640,480);
+    AprilTagReader reader(0,640,480);
     
     // Récupération de la 1ere image
     cv::Mat image = reader.getImage();
